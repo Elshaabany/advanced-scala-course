@@ -1,0 +1,23 @@
+# Scala specific
+target/
+project/target/
+.project
+.cache
+
+# IntelliJ IDEA specific
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# SBT specific
+lib_managed/
+src_managed/
+dist/
+target/
+
+# Mac OS
+.DS_Store
+
+# Windows
+Thumbs.db
