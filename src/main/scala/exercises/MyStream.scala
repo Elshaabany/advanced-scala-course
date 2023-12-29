@@ -8,7 +8,7 @@ abstract class MyStream[+A] {
   def tail: MyStream[A]
 
   def #::[B >: A](element: B): MyStream[B] // prepend operator
-  def ++[B >: A](anotherStream: MyStream[B]): MyStream[B] // concatenate two streams
+  def ++[B >: A](anotherStream: => MyStream[B]): MyStream[B] // concatenate two streams
 
   def foreach(f: A => Unit): Unit
 
@@ -31,7 +31,7 @@ object EmptyStream extends MyStream[Nothing] {
   def tail: MyStream[Nothing] = throw new NoSuchElementException
 
   def #::[B >: Nothing](element: B): MyStream[B] = new Cons[B](element, this)
-  def ++[B >: Nothing](anotherStream: MyStream[B]): MyStream[B] = anotherStream
+  def ++[B >: Nothing](anotherStream: => MyStream[B]): MyStream[B] = anotherStream
 
   def foreach(f: Nothing => Unit): Unit = ()
 
@@ -49,7 +49,7 @@ class Cons[+A](h: A, t: => MyStream[A]) extends MyStream[A] {
   override lazy val tail: MyStream[A] = t   // lazy val for call by name val is called call by need
 
   def #::[B >: A](element: B): MyStream[B] = new Cons(element, this)
-  def ++[B >: A](anotherStream: MyStream[B]): MyStream[B] = new Cons(head, tail ++ anotherStream)
+  def ++[B >: A](anotherStream: => MyStream[B]): MyStream[B] = new Cons(head, tail ++ anotherStream)
 
   def foreach(f: A => Unit): Unit = {
     f(head)
@@ -89,5 +89,26 @@ object playGround extends App {
   println(startFrom0.map(_ * 2).take(100).toList())
 
   // this will result in stackoverflow error
+  // the solution was to make the ++ accept the parameter by name
   println(startFrom0.flatMap(x => new Cons(x, new Cons(x + 1, EmptyStream))).take(10).toList())
+  println(startFrom0.filter(_ < 10).take(10).toList())
+
+
+  // Exercises on streams
+  // 1 - stream of Fibonacci numbers
+  // 2 - stream of prime numbers with Eratosthenes' sieve
+
+  def fibonacci(first: BigInt, second: BigInt): MyStream[BigInt] =
+    new Cons[BigInt](first, fibonacci(second, first + second))
+
+  println(fibonacci(1, 1).takeAsList(100))
+
+  def eratosthenes(numbers: MyStream[Int]): MyStream[Int] = {
+    if (numbers.isEmpty) numbers
+    else new Cons[Int](numbers.head, eratosthenes(numbers.tail.filter(_ % numbers.head != 0)))
+  }
+
+  println(eratosthenes(MyStream.from(2)(_ + 1)).takeAsList(100))
+  val primes = eratosthenes(MyStream.from(2)(_ + 1))
+  println(primes.take(10).toList())
 }
